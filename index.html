@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<!-- Mandal-Art v1.0 · deployment-ready single-page app -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>만다라트 아트</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poor+Story&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --accent: #b78bd8;
+    --accent-soft: #f1e7f8;
+    --ink: #403748;
+    --muted: #8d8495;
+    --paper: #fffdfd;
+    --line: #e8e0eb;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: "Poor Story", -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif;
+    color: var(--ink);
+    background: #ffffff;
+  }
+  .app { width: min(1100px, 94vw); margin: 0 auto; padding: 34px 0 60px; }
+  header { text-align: center; margin-bottom: 28px; }
+  .eyebrow { font-family: -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif; font-size: 12px; letter-spacing: .2em; color: var(--muted); }
+  h1 { margin: 8px 0 8px; font-size: clamp(36px, 7vw, 58px); font-weight: 750; letter-spacing: -.05em; }
+  .subtitle { margin: 0; color: var(--muted); font-size: 14px; }
+  .workspace {
+    display: grid; grid-template-columns: minmax(0, 1fr) 285px; gap: 22px;
+    align-items: start;
+  }
+  .card {
+    background: #ffffff;
+    border: 1px solid rgba(232,224,235,.9);
+    border-radius: 26px;
+    box-shadow: 0 14px 45px rgba(90,60,100,.08);
+    backdrop-filter: blur(10px);
+  }
+  .art-card { padding: clamp(14px, 3vw, 28px); }
+  .mandala {
+    width: min(100%, 700px); aspect-ratio: 1;
+    margin: 0 auto; display: grid; grid-template-columns: repeat(3,1fr);
+    gap: 7px; padding: 7px; border-radius: 22px;
+    background: #fff; box-shadow: inset 0 0 0 1px rgba(0,0,0,.035);
+  }
+  .cell {
+    position: relative; min-width: 0; border: 0; border-radius: 15px;
+    padding: 12px; cursor: pointer; color: var(--ink);
+    display: flex; align-items: center; justify-content: center;
+    text-align: center; font-size: clamp(16px, 2.5vw, 24px); font-weight: 650;
+    transition: transform .16s ease, box-shadow .16s ease, filter .16s ease;
+    overflow: hidden;
+  }
+  .cell:hover { transform: scale(.985); box-shadow: inset 0 0 0 2px rgba(255,255,255,.72); filter: saturate(1.05); }
+  .cell.center { font-size: clamp(20px, 3.1vw, 31px); font-weight: 800; }
+  .cell .edit { position: absolute; right: 9px; top: 7px; font-size: 11px; opacity: .42; }
+  .cell .empty { opacity: .35; font-weight: 500; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; justify-content: center; }
+  button.action {
+    border: 1px solid var(--line); background: #fff; color: var(--ink);
+    border-radius: 999px; padding: 10px 15px; font-size: 13px; cursor: pointer;
+  }
+  button.action.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.action:hover { transform: translateY(-1px); }
+  .panel { padding: 21px; }
+  .panel h2 { font-size: 16px; margin: 0 0 17px; }
+  .section { padding-bottom: 20px; margin-bottom: 20px; border-bottom: 1px solid var(--line); }
+  .section:last-child { border-bottom: 0; margin-bottom: 0; padding-bottom: 0; }
+  label { display:block; font-family: -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif; font-size: 12px; color: var(--muted); margin-bottom: 7px; }
+  input[type="color"] {
+    width: 100%; height: 44px; padding: 3px; border: 1px solid var(--line);
+    border-radius: 12px; background: #fff; cursor: pointer;
+  }
+  .mode { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .mode button {
+    border: 1px solid var(--line); background: #fff; border-radius: 11px;
+    padding: 10px 5px; color: var(--ink); cursor: pointer; font-size: 12px;
+  }
+  .mode button.active { border-color: var(--accent); background: var(--accent-soft); color: #70488a; font-weight: 700; }
+  .swatches { display:grid; grid-template-columns:repeat(6,1fr); gap:7px; }
+  .swatch { aspect-ratio:1; border: 2px solid transparent; border-radius: 9px; cursor:pointer; }
+  .swatch:hover { transform: scale(1.08); }
+  .hint { font-family: -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif; font-size: 11px; line-height: 1.55; color: var(--muted); margin-top: 8px; }
+  .modal-backdrop {
+    position: fixed; inset: 0; display:none; align-items:center; justify-content:center;
+    background: rgba(40,25,45,.28); padding: 20px; z-index: 10;
+  }
+  .modal-backdrop.show { display:flex; }
+  .modal { width:min(420px,100%); background:#fff; border-radius:22px; padding:22px; box-shadow:0 25px 80px rgba(40,25,45,.2); }
+  .modal h3 { margin:0 0 15px; font-size:18px; }
+  textarea {
+    width:100%; min-height:130px; resize:vertical; border:1px solid var(--line);
+    border-radius:13px; padding:13px; font:inherit; outline:none;
+  }
+  textarea:focus { border-color: var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+  .modal-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:12px; }
+  @media (max-width: 760px) {
+    .app { padding-top: 24px; }
+    .workspace { grid-template-columns: 1fr; }
+    .panel { order: 2; }
+    .mandala { gap: 4px; padding: 4px; border-radius: 16px; }
+    .cell { border-radius: 11px; padding: 7px; }
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="eyebrow">MY CREATIVE MANDALA</div>
+    <h1>만다라트 아트</h1>
+    <p class="subtitle">생각을 펼치고, 나만의 색으로 완성해보세요.</p>
+  </header>
+
+  <main class="workspace">
+    <section class="card art-card">
+      <div id="mandala" class="mandala"></div>
+      <div class="actions">
+        <button class="action primary" id="autoColorBtn">✦ 자동 배색</button>
+        <button class="action" id="clearBtn">초기화</button>
+        <button class="action" id="saveBtn">💾 내용 저장</button>
+        <button class="action primary" id="pngBtn">🖼️ PNG 저장</button>
+      </div>
+    </section>
+
+    <aside class="card panel">
+      <h2>🎨 색상 꾸미기</h2>
+
+      <div class="section">
+        <label>색상 방식</label>
+        <div class="mode">
+          <button id="gradientMode" class="active">자동 그라데이션</button>
+          <button id="manualMode">직접 지정</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <label for="centerColor">중심 주제 색상</label>
+        <input id="centerColor" type="color" value="#B78BD8">
+        <div class="hint">중심색을 바꾸면 주변 칸도 중심에서 바깥으로 자연스럽게 변합니다.</div>
+      </div>
+
+      <div class="section">
+        <label>기본 팔레트</label>
+        <div id="swatches" class="swatches"></div>
+      </div>
+
+      <div class="section">
+        <div class="hint">💡 칸을 클릭하면 내용을 입력할 수 있어요.<br>직접 지정 모드에서는 선택한 칸의 색도 바꿀 수 있습니다.</div>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<div id="modalBackdrop" class="modal-backdrop">
+  <div class="modal">
+    <h3 id="modalTitle">칸 내용 입력</h3>
+    <textarea id="cellText" placeholder="이 칸에 넣을 내용을 적어보세요."></textarea>
+    <div class="modal-actions">
+      <button class="action" id="cancelBtn">취소</button>
+      <button class="action primary" id="applyBtn">적용</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const cells = Array.from({length:9}, () => ({ text:"", color:null }));
+let mode = "gradient";
+let editingIndex = null;
+let centerColor = "#B78BD8";
+
+const palettes = [
+  "#B78BD8","#E89AB5","#F2A65A","#F0C85A","#9BCB9A","#79B9D8",
+  "#8D9FE8","#B7A1D9","#D98E8E","#8FC7B5","#E5B67A","#A99ACB"
+];
+
+const mandala = document.getElementById("mandala");
+const modal = document.getElementById("modalBackdrop");
+const textarea = document.getElementById("cellText");
+const centerPicker = document.getElementById("centerColor");
+
+function hexToRgb(hex) {
+  hex = hex.replace("#","");
+  return {
+    r: parseInt(hex.slice(0,2),16),
+    g: parseInt(hex.slice(2,4),16),
+    b: parseInt(hex.slice(4,6),16)
+  };
+}
+function rgbToHex(r,g,b) {
+  return "#" + [r,g,b].map(v => Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,"0")).join("");
+}
+function mix(a,b,t) {
+  const A=hexToRgb(a), B=hexToRgb(b);
+  return rgbToHex(A.r+(B.r-A.r)*t,A.g+(B.g-A.g)*t,A.b+(B.b-A.b)*t);
+}
+function luminance(hex) {
+  const {r,g,b}=hexToRgb(hex);
+  return (0.299*r+0.587*g+0.114*b)/255;
+}
+function textColor(bg) { return luminance(bg) < .62 ? "#fff" : "#403748"; }
+
+function gradientColor(i) {
+  if (i === 4) return centerColor;
+  // corners are farther from the center than edge cells
+  const row=Math.floor(i/3), col=i%3;
+  const dist=Math.max(Math.abs(row-1),Math.abs(col-1));
+  return dist === 1 ? mix(centerColor,"#ffffff",.40) : mix(centerColor,"#ffffff",.68);
+}
+
+function render() {
+  mandala.innerHTML = "";
+  cells.forEach((cell,i) => {
+    const el=document.createElement("button");
+    el.className="cell"+(i===4?" center":"");
+    const bg = mode==="gradient" ? gradientColor(i) : (cell.color || gradientColor(i));
+    el.style.background=bg;
+    el.style.color=textColor(bg);
+    el.innerHTML = cell.text
+      ? `<span>${escapeHtml(cell.text).replace(/\n/g,"<br>")}</span><span class="edit">✎</span>`
+      : `<span class="empty">${i===4 ? "중심 주제" : "클릭해서 입력"}</span>`;
+    el.addEventListener("click",()=>openEditor(i));
+    mandala.appendChild(el);
+  });
+}
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+}
+function openEditor(i) {
+  editingIndex=i;
+  document.getElementById("modalTitle").textContent=i===4?"중심 주제 입력":"키워드 입력";
+  textarea.value=cells[i].text;
+  modal.classList.add("show");
+  setTimeout(()=>textarea.focus(),30);
+}
+function closeEditor(){ modal.classList.remove("show"); editingIndex=null; }
+document.getElementById("applyBtn").onclick=()=>{
+  if(editingIndex!==null) cells[editingIndex].text=textarea.value.trim();
+  closeEditor(); render();
+};
+document.getElementById("cancelBtn").onclick=closeEditor;
+modal.addEventListener("click",e=>{if(e.target===modal)closeEditor();});
+
+centerPicker.addEventListener("input",e=>{
+  centerColor=e.target.value;
+  render();
+});
+document.getElementById("gradientMode").onclick=()=>{
+  mode="gradient";
+  document.getElementById("gradientMode").classList.add("active");
+  document.getElementById("manualMode").classList.remove("active");
+  render();
+};
+document.getElementById("manualMode").onclick=()=>{
+  mode="manual";
+  document.getElementById("manualMode").classList.add("active");
+  document.getElementById("gradientMode").classList.remove("active");
+  render();
+};
+
+document.getElementById("autoColorBtn").onclick=()=>{
+  mode="gradient";
+  document.getElementById("gradientMode").classList.add("active");
+  document.getElementById("manualMode").classList.remove("active");
+  cells.forEach(c=>c.color=null);
+  render();
+};
+
+document.getElementById("clearBtn").onclick=()=>{
+  if(confirm("모든 내용을 초기화할까요?")) {
+    cells.forEach(c=>{c.text="";c.color=null;});
+    render();
+  }
+};
+
+const swatches=document.getElementById("swatches");
+palettes.forEach(color=>{
+  const b=document.createElement("button");
+  b.className="swatch"; b.style.background=color; b.title=color;
+  b.onclick=()=>{centerColor=color; centerPicker.value=color; mode="gradient";
+    document.getElementById("gradientMode").classList.add("active");
+    document.getElementById("manualMode").classList.remove("active");
+    render();
+  };
+  swatches.appendChild(b);
+});
+
+// Double-click a cell in manual mode to set its individual color.
+mandala.addEventListener("dblclick",e=>{
+  const cell=e.target.closest(".cell");
+  if(!cell || mode!=="manual") return;
+  const i=Array.from(mandala.children).indexOf(cell);
+  const input=document.createElement("input");
+  input.type="color"; input.value=cells[i].color || gradientColor(i);
+  input.style.position="fixed"; input.style.left="-9999px";
+  document.body.appendChild(input);
+  input.addEventListener("input",()=>{cells[i].color=input.value;render();});
+  input.click();
+  setTimeout(()=>input.remove(),1000);
+});
+
+document.getElementById("saveBtn").onclick=()=>{
+  const data=JSON.stringify({cells,centerColor,mode});
+  localStorage.setItem("mandalart-art",data);
+  const btn=document.getElementById("saveBtn");
+  const old=btn.textContent; btn.textContent="✓ 저장됨";
+  setTimeout(()=>btn.textContent=old,1100);
+};
+
+document.getElementById("pngBtn").onclick=async()=>{
+  const btn=document.getElementById("pngBtn");
+  const old=btn.textContent;
+  btn.textContent="⏳ PNG 만드는 중...";
+  btn.disabled=true;
+
+  try {
+    // Capture only the artwork itself, not the surrounding controls.
+    const canvas = await html2canvas(document.getElementById("mandala"), {
+      backgroundColor: "#ffffff",
+      scale: 3,
+      useCORS: true,
+      logging: false
+    });
+
+    const link=document.createElement("a");
+    const title=(cells[4].text || "만다라트").replace(/[\\/:*?"<>|]/g,"_").slice(0,40);
+    const stamp=new Date().toISOString().slice(0,10);
+    link.download=`${title}_${stamp}.png`;
+    link.href=canvas.toDataURL("image/png");
+    link.click();
+
+    btn.textContent="✓ PNG 저장됨";
+  } catch(err) {
+    console.error(err);
+    btn.textContent="저장 실패";
+    alert("PNG 저장 중 문제가 생겼어요. 인터넷 연결을 확인한 뒤 다시 시도해주세요.");
+  }
+
+  setTimeout(()=>{
+    btn.textContent=old;
+    btn.disabled=false;
+  },1400);
+};
+
+try {
+  const saved=JSON.parse(localStorage.getItem("mandalart-art"));
+  if(saved) {
+    if(Array.isArray(saved.cells)) saved.cells.forEach((c,i)=>{if(cells[i]) Object.assign(cells[i],c)});
+    if(saved.centerColor) {centerColor=saved.centerColor;centerPicker.value=centerColor;}
+    if(saved.mode==="manual") document.getElementById("manualMode").click();
+  }
+} catch(e) {}
+render();
+</script>
+</body>
+</html>
